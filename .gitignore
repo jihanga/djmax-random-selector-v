@@ -366,3 +366,6 @@ FodyWeavers.xsd
 
 # Runtime-downloaded DLC cache (see UpdateManager.DownloadDlcListAsync)
 DjmaxRandomSelectorV/DMRSV3_Data/DlcList.json
+
+# Release build output
+/release/
