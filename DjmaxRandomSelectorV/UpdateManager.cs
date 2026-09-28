@@ -12,8 +12,10 @@ namespace DjmaxRandomSelectorV
         private const string VersionCheckUrl = "https://raw.githubusercontent.com/pali-fly/djmax-random-selector-v/main/DjmaxRandomSelectorV/Version3.txt";
         private const string AllTrackDownloadUrl = "https://v-archive.net/db/v2/songs.json";
         private const string AppdataDownloadUrl = "https://raw.githubusercontent.com/pali-fly/djmax-random-selector-v/main/DjmaxRandomSelectorV/DMRSV3_Data/appdata.json";
+        private const string DlcListDownloadUrl = "https://v-archive.net/db/dlcs.json";
         private const string AllTrackFilePath = @"DMRSV3_Data\AllTrackList.json";
         private const string AppdataFilePath = @"DMRSV3_Data\appdata.json";
+        public const string DlcListFilePath = @"DMRSV3_Data\DlcList.json";
 
         private readonly VersionContainer _container;
         private readonly IFileManager _fileManager;
@@ -58,6 +60,9 @@ namespace DjmaxRandomSelectorV
                 Debug.WriteLine("appdata update start");
                 tasks.Add(DownloadAppdataAsync());
             }
+            // update dlc list (always refreshed; no version tracking is provided by the source API)
+            Debug.WriteLine("dlc list update start");
+            tasks.Add(DownloadDlcListAsync());
 
             while (tasks.Count > 0)
             {
@@ -102,6 +107,21 @@ namespace DjmaxRandomSelectorV
                 return -1;
             }
             return 1;
+        }
+
+        private async Task<int> DownloadDlcListAsync()
+        {
+            try
+            {
+                string result = await _fileManager.RequestAsync(DlcListDownloadUrl);
+                _fileManager.Write(result, DlcListFilePath);
+            }
+            catch
+            {
+                // Non-critical: if this fails, categories simply fall back to appdata.json only.
+                return -1;
+            }
+            return 2;
         }
     }
 }

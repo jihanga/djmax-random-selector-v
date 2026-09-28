@@ -99,7 +99,16 @@ namespace DjmaxRandomSelectorV
                 Application.Shutdown();
                 return;
             }
-            _categoryContainer.SetCategories(appdata);
+            List<Models.VArchiveDlcItem> dlcList = null;
+            try
+            {
+                dlcList = _fileManager.Import<List<Models.VArchiveDlcItem>>(UpdateManager.DlcListFilePath);
+            }
+            catch
+            {
+                // Non-critical: fall back to appdata.json categories only.
+            }
+            _categoryContainer.SetCategories(appdata, dlcList);
             // Set AllTrack
             _db.Initialize(appdata);
             _db.ImportDB();

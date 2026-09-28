@@ -363,3 +363,6 @@ MigrationBackup/
 FodyWeavers.xsd
 /AnalysisReport.sarif
 /upgrade-assistant.clef
+
+# Runtime-downloaded DLC cache (see UpdateManager.DownloadDlcListAsync)
+DjmaxRandomSelectorV/DMRSV3_Data/DlcList.json
