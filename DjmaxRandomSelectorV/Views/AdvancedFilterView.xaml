@@ -221,7 +221,8 @@
                      BorderThickness="0"
                      Padding="2 1"
                      SelectionMode="Extended"
-                     SnapsToDevicePixels="True">
+                     SnapsToDevicePixels="True"
+                     MouseDoubleClick="OnPlaylistItemDoubleClick">
                 <ListBox.Resources>
                     <sys:Double x:Key="{x:Static SystemParameters.VerticalScrollBarWidthKey}">10</sys:Double>
                     <Style TargetType="{x:Type ScrollViewer}" BasedOn="{StaticResource PlaylistScrollViewer}">
@@ -237,9 +238,24 @@
                                     <Border x:Name="Border"
                                             BorderThickness="3"
                                             SnapsToDevicePixels="True">
-                                        <Border.BorderBrush>
-                                            <SolidColorBrush Color="Transparent"/>
-                                        </Border.BorderBrush>
+                                        <Border.Style>
+                                            <Style TargetType="{x:Type Border}">
+                                                <Setter Property="BorderBrush">
+                                                    <Setter.Value>
+                                                        <SolidColorBrush Color="Transparent"/>
+                                                    </Setter.Value>
+                                                </Setter>
+                                                <Style.Triggers>
+                                                    <DataTrigger Binding="{Binding IsNext}" Value="True">
+                                                        <Setter Property="BorderBrush">
+                                                            <Setter.Value>
+                                                                <SolidColorBrush Color="#C400BEFF"/>
+                                                            </Setter.Value>
+                                                        </Setter>
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Border.Style>
                                         <VisualStateManager.VisualStateGroups>
                                             <VisualStateGroup x:Name="SelectionStates">
                                                 <VisualState x:Name="Unselected"/>

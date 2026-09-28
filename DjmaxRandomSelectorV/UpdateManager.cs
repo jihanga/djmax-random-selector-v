@@ -60,7 +60,7 @@ namespace DjmaxRandomSelectorV
                 Debug.WriteLine("appdata update start");
                 tasks.Add(DownloadAppdataAsync());
             }
-            // update dlc list (always refreshed; no version tracking is provided by the source API)
+            // DLC 목록 갱신 (출처 API에 버전 정보가 없어 항상 새로 받는다)
             Debug.WriteLine("dlc list update start");
             tasks.Add(DownloadDlcListAsync());
 
@@ -118,7 +118,7 @@ namespace DjmaxRandomSelectorV
             }
             catch
             {
-                // Non-critical: if this fails, categories simply fall back to appdata.json only.
+                // 오류가 발생해도 Categories는 appdata.json만 사용하므로 처리를 중단하지 않는다.
                 return -1;
             }
             return 2;

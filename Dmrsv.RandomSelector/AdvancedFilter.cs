@@ -14,6 +14,7 @@ namespace Dmrsv.RandomSelector
             {
                 _patternList = value;
                 _patternList.CollectionChanged += (s, e) => IsUpdated = true;
+                IsUpdated = true;
             }
         }
 

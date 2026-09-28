@@ -6,8 +6,8 @@ namespace DjmaxRandomSelectorV
 {
     public class CategoryContainer
     {
-        // Used for DLCs that are known from v-archive's dlcs.json but not yet
-        // registered in appdata.json (steamId/type/linkDisc metadata unavailable).
+        // v-archive의 dlcs.json에는 알고 있지만 appdata.json에는 아직 등록되지 않은 DLC에 사용한다.
+        // (steamId/type/linkDisc 등의 메타데이터를 제공받지 못한다.)
         public const int UnclassifiedType = 99;
 
         private List<Category> _categories;

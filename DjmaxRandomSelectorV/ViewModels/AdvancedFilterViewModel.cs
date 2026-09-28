@@ -15,7 +15,7 @@ using Microsoft.Win32;
 
 namespace DjmaxRandomSelectorV.ViewModels
 {
-    public class AdvancedFilterViewModel : Screen, IHandle<VArchiveMessage>
+    public class AdvancedFilterViewModel : Screen, IHandle<VArchiveMessage>, IHandle<NextPatternMessage>
     {
         private const string DefaultPath = @"DMRSV3_Data\CurrentPlaylist.json";
         private const string PresetPath = @"DMRSV3_Data\Playlist";
@@ -75,6 +75,13 @@ namespace DjmaxRandomSelectorV.ViewModels
 
             SearchResult = new BindableCollection<Pattern>();
             TitleSuggestions = new BindableCollection<string>();
+        }
+
+        protected override Task OnActivateAsync(CancellationToken cancellationToken)
+        {
+            // RandomSelector.Initialize() 이후에 호출되므로 이 시점에는 포인터 조회가 가능하다.
+            RefreshNextIndicator();
+            return Task.CompletedTask;
         }
 
         protected override Task OnDeactivateAsync(bool close, CancellationToken cancellationToken)
@@ -189,6 +196,8 @@ namespace DjmaxRandomSelectorV.ViewModels
             if (0 <= newIndex && newIndex <= PlaylistItems.Count - 1)
             {
                 PlaylistItems.Move(index, index + move);
+                _filter.PatternList.Move(index, index + move);
+                RefreshNextIndicator();
             }
         }
 
@@ -228,6 +237,7 @@ namespace DjmaxRandomSelectorV.ViewModels
             PlaylistItems.IsNotifying = true;
             PlaylistItems.Refresh();
             items.Clear();
+            RefreshNextIndicator();
         }
         #endregion
 
@@ -241,6 +251,7 @@ namespace DjmaxRandomSelectorV.ViewModels
                 .ThenBy(x => Array.IndexOf(difficultyOrder, x.Style[2..4])).ToList();
             PlaylistItems.Clear();
             PlaylistItems.AddRange(sorted);
+            SyncPatternListOrder();
         }
 
         public void DistinctItems()
@@ -252,8 +263,30 @@ namespace DjmaxRandomSelectorV.ViewModels
                 var deduplicated = PlaylistItems.Distinct().ToList();
                 PlaylistItems.Clear();
                 PlaylistItems.AddRange(deduplicated);
-                _filter.PatternList = new ObservableCollection<Pattern>(_filter.PatternList.Distinct());
+                SyncPatternListOrder();
             }
+        }
+
+        // 필터의 패턴 순서를 화면에 보이는 플레이리스트 순서와 일치시킨다.
+        private void SyncPatternListOrder()
+        {
+            var patterns = _filter.PatternList.ToDictionary(p => p.PatternId, p => p);
+            var reordered = new List<Pattern>();
+            foreach (PlaylistItem item in PlaylistItems)
+            {
+                if (patterns.TryGetValue(item.PatternId, out Pattern pattern))
+                {
+                    reordered.Add(pattern);
+                }
+            }
+            _filter.PatternList = new ObservableCollection<Pattern>(reordered);
+            RefreshNextIndicator();
+        }
+
+        private void RefreshNextIndicator()
+        {
+            IoC.Get<RandomSelector>().RefreshSequentialPointer();
+            ApplyNextIndicator(IoC.Get<RandomSelector>().PeekNextSequentialPattern());
         }
 
         public void ClearItems()
@@ -264,6 +297,7 @@ namespace DjmaxRandomSelectorV.ViewModels
             {
                 PlaylistItems.Clear();
                 _filter.PatternList.Clear();
+                RefreshNextIndicator();
             }
         }
         #endregion
@@ -453,6 +487,31 @@ namespace DjmaxRandomSelectorV.ViewModels
             }
             AddToFilterAndPlaylist(message.Items);
             return Task.CompletedTask;
+        }
+
+        public Task HandleAsync(NextPatternMessage message, CancellationToken cancellationToken)
+        {
+            ApplyNextIndicator(message.Item);
+            return Task.CompletedTask;
+        }
+
+        // 순차 포인터를 지정한 플레이리스트 항목으로 이동한다. (더블클릭에 바인딩)
+        public void SetNextPointer(PlaylistItem item)
+        {
+            if (item is null)
+            {
+                return;
+            }
+            IoC.Get<RandomSelector>().SetSequentialPointer(item.PatternId);
+        }
+
+        private void ApplyNextIndicator(Pattern next)
+        {
+            int nextId = next?.PatternId ?? -1;
+            foreach (PlaylistItem item in PlaylistItems)
+            {
+                item.IsNext = item.PatternId == nextId;
+            }
         }
     }
 }

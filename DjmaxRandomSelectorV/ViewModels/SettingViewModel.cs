@@ -25,7 +25,22 @@ namespace DjmaxRandomSelectorV.ViewModels
             {
                 _message.FilterType = value ? FilterType.Playlist : FilterType.Query;
                 NotifyOfPropertyChange();
+                NotifyOfPropertyChange(nameof(IsSelectModeVisible));
             }
+        }
+        // 순차 선택은 플레이리스트 필터에서만 의미가 있다.
+        public bool IsSelectModeVisible => _message.FilterType == FilterType.Playlist;
+        public string SelectModeText => _message.SelectMode == SelectMode.Sequential ? "SEQUENTIAL" : "RANDOM";
+        public void SwitchSelectMode()
+        {
+            if (!IsSelectModeVisible)
+            {
+                return;
+            }
+            _message.SelectMode = _message.SelectMode == SelectMode.Random
+                                ? SelectMode.Sequential
+                                : SelectMode.Random;
+            NotifyOfPropertyChange(nameof(SelectModeText));
         }
         public int InputDelay
         {
@@ -58,7 +73,8 @@ namespace DjmaxRandomSelectorV.ViewModels
                 FilterType = config.FilterType,
                 InputInterval = config.InputDelay,
                 SavesExclusion = config.SavesRecents,
-                OwnedDlcs = config.OwnedDlcs.ConvertAll(x => x)
+                OwnedDlcs = config.OwnedDlcs.ConvertAll(x => x),
+                SelectMode = config.SelectMode
             };
 
             _categories = IoC.Get<CategoryContainer>().GetCategories();
@@ -102,6 +118,7 @@ namespace DjmaxRandomSelectorV.ViewModels
             config.InputDelay = _message.InputInterval;
             config.SavesRecents = _message.SavesExclusion;
             config.OwnedDlcs = _message.OwnedDlcs.ConvertAll(x => x);
+            config.SelectMode = _message.SelectMode;
 
             _fileManager.Export(config, ConfigPath);
             _eventAggregator.PublishOnUIThreadAsync(_message);

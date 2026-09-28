@@ -9,5 +9,6 @@ namespace DjmaxRandomSelectorV.Messages
         public int InputInterval { get; set; }
         public bool SavesExclusion { get; set; }
         public List<string> OwnedDlcs { get; set; }
+        public SelectMode SelectMode { get; set; }
     }
 }

@@ -51,6 +51,7 @@ namespace DjmaxRandomSelectorV
 
             var eventAggregator = IoC.Get<IEventAggregator>();
             _rs = new RandomSelector(eventAggregator, _db);
+            _container.Instance(_rs);
             _executor = new ExecutionHelper(eventAggregator);
 
 
@@ -106,7 +107,7 @@ namespace DjmaxRandomSelectorV
             }
             catch
             {
-                // Non-critical: fall back to appdata.json categories only.
+                // 오류가 발생해도 Categories는 appdata.json만 사용하므로 처리를 중단하지 않는다.
             }
             _categoryContainer.SetCategories(appdata, dlcList);
             // Set AllTrack
@@ -139,6 +140,7 @@ namespace DjmaxRandomSelectorV
             }
             _config.AllTrackVersion = _versionContainer.AllTrackVersion;
             _config.AppdataVersion = _versionContainer.AppdataVersion;
+            _config.NextPatternId = _rs.NextPatternId;
             _fileManager.Export(_config, ConfigFilePath);
         }
 

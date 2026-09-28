@@ -21,6 +21,9 @@ namespace DjmaxRandomSelectorV
         public MusicForm Mode { get; set; } = MusicForm.Default;
         public InputMethod Aider { get; set; } = InputMethod.Default;
         public LevelPreference Level { get; set; } = LevelPreference.None;
+        public SelectMode SelectMode { get; set; } = SelectMode.Random;
+        // 순차 선택 모드에서 다음에 선곡될 패턴. 프로그램 재시작 시 이 위치부터 이어서 진행한다.
+        public int? NextPatternId { get; set; }
 
 
         /*************** Window Property *****************/

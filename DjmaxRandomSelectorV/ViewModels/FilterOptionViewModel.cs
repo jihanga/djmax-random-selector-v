@@ -41,7 +41,7 @@ namespace DjmaxRandomSelectorV.ViewModels
             {
                 _except = value;
                 NotifyOfPropertyChange();
-                Publish(new FilterOptionMessage(_except, _mode, _aider, _level));
+                Publish();
             }
         }
         public string ModeText { get => _modeItems[_mode]; }
@@ -51,6 +51,7 @@ namespace DjmaxRandomSelectorV.ViewModels
         public FilterOptionViewModel(IEventAggregator eventAggregator)
         {
             _eventAggregator = eventAggregator;
+            _eventAggregator.SubscribeOnUIThread(this);
             var config = IoC.Get<Dmrsv3Configuration>();
             _except = config.RecentsCount;
             _mode = config.Mode;
@@ -72,9 +73,10 @@ namespace DjmaxRandomSelectorV.ViewModels
             return Task.CompletedTask;
         }
 
-        private void Publish(object message)
+        private void Publish()
         {
-            _eventAggregator.PublishOnUIThreadAsync(message);
+            _eventAggregator.PublishOnUIThreadAsync(
+                new FilterOptionMessage(_except, _mode, _aider, _level));
         }
 
         public void SwitchMode()
@@ -83,7 +85,7 @@ namespace DjmaxRandomSelectorV.ViewModels
             value ^= 0x1;
             _mode = (MusicForm)value;
             NotifyOfPropertyChange(nameof(ModeText));
-            Publish(new FilterOptionMessage(_except, _mode, _aider, _level));
+            Publish();
         }
 
         public void SwitchAider(int move)
@@ -93,7 +95,7 @@ namespace DjmaxRandomSelectorV.ViewModels
             value = (value % 3 + 3) % 3;
             _aider = (InputMethod)value;
             NotifyOfPropertyChange(nameof(AiderText));
-            Publish(new FilterOptionMessage(_except, _mode, _aider, _level));
+            Publish();
         }
 
         public void SwitchLevel(int move)
@@ -103,7 +105,7 @@ namespace DjmaxRandomSelectorV.ViewModels
             value = (value % 3 + 3) % 3;
             _level = (LevelPreference)value;
             NotifyOfPropertyChange(nameof(LevelText));
-            Publish(new FilterOptionMessage(_except, _mode, _aider, _level));
+            Publish();
         }
     }
 }
