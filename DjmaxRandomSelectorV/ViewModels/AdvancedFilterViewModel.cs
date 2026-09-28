@@ -270,7 +270,11 @@ namespace DjmaxRandomSelectorV.ViewModels
         // 필터의 패턴 순서를 화면에 보이는 플레이리스트 순서와 일치시킨다.
         private void SyncPatternListOrder()
         {
-            var patterns = _filter.PatternList.ToDictionary(p => p.PatternId, p => p);
+            // 중복 제거 전에는 같은 PatternId가 여러 번 존재하므로, 중복 키를 허용하지 않는
+            // ToDictionary를 그대로 쓰면 ArgumentException이 발생한다.
+            var patterns = _filter.PatternList
+                                    .GroupBy(p => p.PatternId)
+                                    .ToDictionary(g => g.Key, g => g.First());
             var reordered = new List<Pattern>();
             foreach (PlaylistItem item in PlaylistItems)
             {
