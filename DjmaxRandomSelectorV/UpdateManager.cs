@@ -10,9 +10,9 @@ namespace DjmaxRandomSelectorV
 {
     public class UpdateManager
     {
-        private const string VersionCheckUrl = "https://raw.githubusercontent.com/pali-fly/djmax-random-selector-v/main/DjmaxRandomSelectorV/Version3.txt";
+        private const string VersionCheckUrl = "https://raw.githubusercontent.com/jihanga/djmax-random-selector-v/main/DjmaxRandomSelectorV/Version3.txt";
         private const string AllTrackDownloadUrl = "https://v-archive.net/db/v2/songs.json";
-        private const string AppdataDownloadUrl = "https://raw.githubusercontent.com/pali-fly/djmax-random-selector-v/main/DjmaxRandomSelectorV/DMRSV3_Data/appdata.json";
+        private const string AppdataDownloadUrl = "https://raw.githubusercontent.com/jihanga/djmax-random-selector-v/main/DjmaxRandomSelectorV/DMRSV3_Data/appdata.json";
         private const string DlcListDownloadUrl = "https://v-archive.net/db/dlcs.json";
         private const string AllTrackFilePath = @"DMRSV3_Data\AllTrackList.json";
         private const string AppdataFilePath = @"DMRSV3_Data\appdata.json";
