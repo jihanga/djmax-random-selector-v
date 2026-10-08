@@ -5,6 +5,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
              xmlns:local="clr-namespace:DjmaxRandomSelectorV.Views"
              xmlns:cal="http://www.caliburnproject.org"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
              mc:Ignorable="d" 
              d:DesignHeight="340" d:DesignWidth="680">
     <Grid>
@@ -495,8 +496,7 @@
                 </Grid.ColumnDefinitions>
                 <Grid.RowDefinitions>
                     <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
-                    <RowDefinition Height="Auto"/>
+                    <RowDefinition/>
                 </Grid.RowDefinitions>
                 <StackPanel Grid.Column="1"
                             Orientation="Horizontal"
@@ -525,8 +525,16 @@
                                   Height="16"
                                   Margin="10 0 0 0"/>
                 </StackPanel>
-                <ItemsControl x:Name="RegularCategories"
-                              Grid.Row="1" Grid.Column="1">
+                <!-- DLC가 늘어나 화면을 넘으면 스크롤된다. -->
+                <ScrollViewer Grid.Row="1" Grid.Column="1"
+                              VerticalScrollBarVisibility="Auto"
+                              HorizontalScrollBarVisibility="Disabled"
+                              Style="{StaticResource PlaylistScrollViewer}">
+                <ScrollViewer.Resources>
+                    <sys:Double x:Key="{x:Static SystemParameters.VerticalScrollBarWidthKey}">8</sys:Double>
+                </ScrollViewer.Resources>
+                <StackPanel>
+                <ItemsControl x:Name="RegularCategories">
                     <ItemsControl.ItemTemplate>
                         <DataTemplate>
                             <ToggleButton x:Name="Button"
@@ -642,7 +650,6 @@
                     </ItemsControl.ItemsPanel>
                 </ItemsControl>
                 <ItemsControl x:Name="CollabCategories"
-                              Grid.Row="2" Grid.Column="1"
                               Background="{StaticResource DarkerTranslucentBackgroundColor}"
                               Margin="0 5 0 0"
                               Padding="0 4">
@@ -736,6 +743,8 @@
                         </ItemsPanelTemplate>
                     </ItemsControl.ItemsPanel>
                 </ItemsControl>
+                </StackPanel>
+                </ScrollViewer>
             </Grid>
         </Border>
     </Grid>
