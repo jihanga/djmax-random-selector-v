@@ -1,0 +1,12 @@
+kind,from,to,trackId,priority
+strip,',,,
+strip,-,,,
+replace,Ö,O,,
+replace,Ä,A,,
+replace,Ü,U,,
+replace,È,E,,
+replace,É,E,,
+replace,脳,腦,,
+replace,撃,擊,,
+tiebreak,,,267,2
+tiebreak,,,170,1

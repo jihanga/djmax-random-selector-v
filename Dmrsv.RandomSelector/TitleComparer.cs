@@ -43,23 +43,10 @@ namespace Dmrsv.RandomSelector
             return priorityA - priorityB;
         }
 
+        // Djmax sorts titles case-insensitively and with some characters ignored or replaced (see SortRules)
         private string CleanString(string text)
         {
-            // Djmax sorts titles with case-insensitive and ignoring the characters below
-            string s = text.Replace("'", string.Empty).Replace("-", string.Empty).ToUpper();
-
-            // Djmax treats umlauts as their base alphabets for sorting
-            s = s.Replace("Ö", "O")
-                 .Replace("Ä", "A")
-                 .Replace("Ü", "U")
-                 .Replace("È", "E")
-                 .Replace("É", "E");
-
-            // Djmax sorts Chinese characters based on standard Korean Hanja
-            s = s.Replace("脳", "腦") // 脳天直撃
-                 .Replace("撃", "擊");
-
-            return s;
+            return SortRules.Current.Clean(text);
         }
 /*
         private int GetPriority(char ch, int idx)

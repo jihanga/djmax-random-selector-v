@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using System.Threading.Tasks;
+using Dmrsv.RandomSelector;
 
 namespace DjmaxRandomSelectorV
 {
@@ -16,6 +17,8 @@ namespace DjmaxRandomSelectorV
         private const string AllTrackFilePath = @"DMRSV3_Data\AllTrackList.json";
         private const string AppdataFilePath = @"DMRSV3_Data\appdata.json";
         public const string DlcListFilePath = @"DMRSV3_Data\DlcList.json";
+        public const string SortRulesFilePath = @"DMRSV3_Data\SortRules.json";
+        public const string SheetVersionLabel = "sheet";
 
         private readonly VersionContainer _container;
         private readonly IFileManager _fileManager;
@@ -53,16 +56,27 @@ namespace DjmaxRandomSelectorV
                 Debug.WriteLine("all track update start");
                 tasks.Add(DownloadAllTrackAsync());
             }
+            // DLC 목록 갱신 (출처 API에 버전 정보가 없어 항상 새로 받는다)
+            Debug.WriteLine("dlc list update start");
+            tasks.Add(DownloadDlcListAsync());
             // update appdata
-            if (!File.Exists(AllTrackFilePath)
+            SheetSource sheet = LoadSheetSource();
+            if (sheet is not null)
+            {
+                // 시트에는 버전 정보가 없어 항상 새로 받는다.
+                Debug.WriteLine("appdata update start (sheet)");
+                tasks.Add(DownloadAppdataFromSheetAsync(sheet));
+                if (sheet.Tabs.ContainsKey(SheetSource.SortRulesTab))
+                {
+                    tasks.Add(DownloadSortRulesAsync(sheet));
+                }
+            }
+            else if (!File.Exists(AllTrackFilePath)
                 || versions[1].CompareTo(_container.AppdataVersion) > 0)
             {
                 Debug.WriteLine("appdata update start");
                 tasks.Add(DownloadAppdataAsync());
             }
-            // DLC 목록 갱신 (출처 API에 버전 정보가 없어 항상 새로 받는다)
-            Debug.WriteLine("dlc list update start");
-            tasks.Add(DownloadDlcListAsync());
 
             while (tasks.Count > 0)
             {
@@ -75,6 +89,9 @@ namespace DjmaxRandomSelectorV
                         break;
                     case 1:
                         _container.AppdataVersion = versions[1];
+                        break;
+                    case 3:
+                        _container.AppdataVersion = SheetVersionLabel;
                         break;
                 }
                 tasks.Remove(finishedTask);
@@ -107,6 +124,60 @@ namespace DjmaxRandomSelectorV
                 return -1;
             }
             return 1;
+        }
+
+        private SheetSource LoadSheetSource()
+        {
+            try
+            {
+                var sheet = _fileManager.Import<SourcesConfig>(SourcesConfig.FilePath).Sheet;
+                return sheet is { IsConfigured: true } ? sheet : null;
+            }
+            catch
+            {
+                // sources.json이 없거나 읽을 수 없으면 기존 방식(GitHub appdata.json)을 쓴다.
+                return null;
+            }
+        }
+
+        private async Task<int> DownloadAppdataFromSheetAsync(SheetSource sheet)
+        {
+            try
+            {
+                string categories = await _fileManager.RequestAsync(sheet.GetCsvUrl(SheetSource.CategoriesTab));
+                string settings = await _fileManager.RequestAsync(sheet.GetCsvUrl(SheetSource.SettingsTab));
+                string linkDisc = sheet.Tabs.ContainsKey(SheetSource.LinkDiscTab)
+                    ? await _fileManager.RequestAsync(sheet.GetCsvUrl(SheetSource.LinkDiscTab))
+                    : null;
+
+                var importer = new SheetImporter();
+                Dmrsv3AppData appdata = importer.Build(categories, linkDisc, settings);
+                _fileManager.Export(appdata, AppdataFilePath);
+                return 3;
+            }
+            catch (Exception e)
+            {
+                Debug.WriteLine("[sheet] failed: " + e.Message);
+                // 마지막으로 받은 appdata.json이 남아 있으면 그대로 쓴다. 없으면 기존 방식으로 내려받는다.
+                return File.Exists(AppdataFilePath) ? -1 : await DownloadAppdataAsync();
+            }
+        }
+
+        private async Task<int> DownloadSortRulesAsync(SheetSource sheet)
+        {
+            try
+            {
+                string csv = await _fileManager.RequestAsync(sheet.GetCsvUrl(SheetSource.SortRulesTab));
+                SortRules rules = new SheetImporter().BuildSortRules(csv);
+                _fileManager.Export(rules, SortRulesFilePath);
+                return 4;
+            }
+            catch (Exception e)
+            {
+                // 오류가 발생해도 마지막으로 받은 규칙이나 기본 규칙을 쓰므로 처리를 중단하지 않는다.
+                Debug.WriteLine("[sheet] sort rules failed: " + e.Message);
+                return -1;
+            }
         }
 
         private async Task<int> DownloadDlcListAsync()

@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Interop;
 using Caliburn.Micro;
 using DjmaxRandomSelectorV.ViewModels;
+using Dmrsv.RandomSelector;
 
 namespace DjmaxRandomSelectorV
 {
@@ -81,7 +82,8 @@ namespace DjmaxRandomSelectorV
             {
                 _ = Task.Run(() => MessageBox.Show(ex.Message, "Error", MessageBoxButton.OK, MessageBoxImage.Error));
             }
-            if (_versionContainer.AppdataVersion.CompareTo(_config.AppdataVersion) > 0)
+            if (_versionContainer.AppdataVersion != UpdateManager.SheetVersionLabel
+                && _versionContainer.AppdataVersion.CompareTo(_config.AppdataVersion) > 0)
             {
                 _ = Task.Run(() => MessageBox.Show($"App data has been updated to the version {_versionContainer.AppdataVersion}.",
                              "Update", MessageBoxButton.OK, MessageBoxImage.Information));
@@ -110,6 +112,14 @@ namespace DjmaxRandomSelectorV
                 // 오류가 발생해도 Categories는 appdata.json만 사용하므로 처리를 중단하지 않는다.
             }
             _categoryContainer.SetCategories(appdata, dlcList);
+            try
+            {
+                SortRules.Current = _fileManager.Import<SortRules>(UpdateManager.SortRulesFilePath);
+            }
+            catch
+            {
+                // 파일이 없거나 읽을 수 없으면 기본 정렬 규칙(SortRules.CreateDefault)을 그대로 쓴다.
+            }
             // Set AllTrack
             _db.Initialize(appdata);
             _db.ImportDB();
