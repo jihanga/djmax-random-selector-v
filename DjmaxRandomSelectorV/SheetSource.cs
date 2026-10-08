@@ -18,6 +18,7 @@ namespace DjmaxRandomSelectorV
         public const string LinkDiscTab = "linkDisc";
         public const string SettingsTab = "settings";
         public const string SortRulesTab = "sortRules";
+        public const string StylesTab = "styles";
 
         // https://docs.google.com/spreadsheets/d/e/2PACX-.../pub
         public string BaseUrl { get; set; }

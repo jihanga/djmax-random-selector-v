@@ -18,6 +18,7 @@ namespace DjmaxRandomSelectorV
         private const string AppdataFilePath = @"DMRSV3_Data\appdata.json";
         public const string DlcListFilePath = @"DMRSV3_Data\DlcList.json";
         public const string SortRulesFilePath = @"DMRSV3_Data\SortRules.json";
+        public const string StylesFilePath = @"DMRSV3_Data\Styles.json";
         public const string SheetVersionLabel = "sheet";
 
         private readonly VersionContainer _container;
@@ -69,6 +70,10 @@ namespace DjmaxRandomSelectorV
                 if (sheet.Tabs.ContainsKey(SheetSource.SortRulesTab))
                 {
                     tasks.Add(DownloadSortRulesAsync(sheet));
+                }
+                if (sheet.Tabs.ContainsKey(SheetSource.StylesTab))
+                {
+                    tasks.Add(DownloadStylesAsync(sheet));
                 }
             }
             else if (!File.Exists(AllTrackFilePath)
@@ -176,6 +181,22 @@ namespace DjmaxRandomSelectorV
             {
                 // 오류가 발생해도 마지막으로 받은 규칙이나 기본 규칙을 쓰므로 처리를 중단하지 않는다.
                 Debug.WriteLine("[sheet] sort rules failed: " + e.Message);
+                return -1;
+            }
+        }
+
+        private async Task<int> DownloadStylesAsync(SheetSource sheet)
+        {
+            try
+            {
+                string csv = await _fileManager.RequestAsync(sheet.GetCsvUrl(SheetSource.StylesTab));
+                _fileManager.Export(new SheetImporter().BuildStyles(csv), StylesFilePath);
+                return 5;
+            }
+            catch (Exception e)
+            {
+                // 오류가 발생해도 마지막으로 받은 스타일이나 앱에 정의된 색을 쓰므로 처리를 중단하지 않는다.
+                Debug.WriteLine("[sheet] styles failed: " + e.Message);
                 return -1;
             }
         }

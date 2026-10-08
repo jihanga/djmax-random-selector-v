@@ -1,1 +1,4 @@
 id,bg,fg,border
+ARC,#ffffff,,
+PLI4,#2268f7,,
+DNF,"linear-gradient(#ff763e 10%, #ffcf55 90%)",,

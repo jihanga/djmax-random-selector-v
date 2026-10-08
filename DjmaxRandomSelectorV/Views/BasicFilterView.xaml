@@ -640,6 +640,16 @@
                                     <Setter TargetName="Button" Property="Background" Value="{StaticResource BgPremiumTrack}"/>
                                     <Setter TargetName="Button" Property="Foreground" Value="{StaticResource FgPremiumTrack}"/>
                                 </DataTrigger>
+                                <!-- 시트(styles 탭)에 정의된 색은 위의 색보다 우선한다. 반드시 마지막에 둔다. -->
+                                <DataTrigger Binding="{Binding HasStyle}" Value="True">
+                                    <Setter TargetName="Button" Property="Background" Value="{Binding StyleBackground}"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding HasStyleForeground}" Value="True">
+                                    <Setter TargetName="Button" Property="Foreground" Value="{Binding StyleForeground}"/>
+                                </DataTrigger>
+                                <DataTrigger Binding="{Binding HasStyleBorder}" Value="True">
+                                    <Setter TargetName="Button" Property="BorderBrush" Value="{Binding StyleBorderBrush}"/>
+                                </DataTrigger>
                             </DataTemplate.Triggers>
                         </DataTemplate>
                     </ItemsControl.ItemTemplate>
@@ -733,6 +743,10 @@
                                 </DataTrigger>
                                 <DataTrigger Binding="{Binding Name}" Value="TRIBUTE #2">
                                     <Setter TargetName="Button" Property="Background" Value="{StaticResource BgTribute2}"/>
+                                </DataTrigger>
+                                <!-- 시트(styles 탭)에 정의된 색은 위의 색보다 우선한다. 반드시 마지막에 둔다. -->
+                                <DataTrigger Binding="{Binding HasStyle}" Value="True">
+                                    <Setter TargetName="Button" Property="Background" Value="{Binding StyleBackground}"/>
                                 </DataTrigger>
                             </DataTemplate.Triggers>
                         </DataTemplate>

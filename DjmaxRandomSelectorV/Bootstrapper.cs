@@ -23,6 +23,7 @@ namespace DjmaxRandomSelectorV
         private readonly RandomSelector _rs;
         private readonly TrackDB _db;
         private readonly CategoryContainer _categoryContainer;
+        private readonly CategoryStyleContainer _styleContainer;
         private readonly VersionContainer _versionContainer;
         private readonly UpdateManager _updater;
         private readonly ExecutionHelper _executor;
@@ -46,6 +47,9 @@ namespace DjmaxRandomSelectorV
             
             _categoryContainer = new CategoryContainer();
             _container.Instance(_categoryContainer);
+
+            _styleContainer = new CategoryStyleContainer();
+            _container.Instance(_styleContainer);
 
             _db = new TrackDB(_fileManager);
             _container.Instance(_db);
@@ -119,6 +123,14 @@ namespace DjmaxRandomSelectorV
             catch
             {
                 // 파일이 없거나 읽을 수 없으면 기본 정렬 규칙(SortRules.CreateDefault)을 그대로 쓴다.
+            }
+            try
+            {
+                _styleContainer.SetStyles(_fileManager.Import<List<CategoryStyle>>(UpdateManager.StylesFilePath));
+            }
+            catch
+            {
+                // 파일이 없거나 읽을 수 없으면 앱에 정의된 색(BasicFilterView.xaml)만 쓴다.
             }
             // Set AllTrack
             _db.Initialize(appdata);

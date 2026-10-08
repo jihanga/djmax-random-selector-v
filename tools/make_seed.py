@@ -40,5 +40,11 @@ write("sortRules.csv", ["kind", "from", "to", "trackId", "priority"],
        ["replace", "脳", "腦", "", ""], ["replace", "撃", "擊", "", ""],
        ["tiebreak", "", "", 267, 2], ["tiebreak", "", "", 170, 1]])
 
-write("styles.csv", ["id", "bg", "fg", "border"], [])
+# Button colors. Only DLCs that have no color defined in BasicFilterView.xaml are listed
+# (values taken from the v-archive.net stylesheet: .dlc_logo--<code>). A row here wins over the app's own color.
+# bg/fg/border accept: #hex, rgb(), css linear-gradient(...), or @ResourceKey (ColorDictionary.xaml). fg is derived from bg when empty.
+write("styles.csv", ["id", "bg", "fg", "border"],
+      [["ARC", "#ffffff", "", ""],
+       ["PLI4", "#2268f7", "", ""],
+       ["DNF", "linear-gradient(#ff763e 10%, #ffcf55 90%)", "", ""]])
 print("written to", out)

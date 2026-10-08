@@ -141,6 +141,28 @@ namespace DjmaxRandomSelectorV
             return rules;
         }
 
+        public List<CategoryStyle> BuildStyles(string csv)
+        {
+            var result = new Dictionary<string, CategoryStyle>();
+            int line = 1;
+            foreach (var row in ReadRows(csv, "id", "bg", "fg", "border"))
+            {
+                line++;
+                string id = row["id"].Trim();
+                if (id.Length == 0)
+                {
+                    Warn($"styles line {line}: id is empty.");
+                    continue;
+                }
+                if (result.ContainsKey(id))
+                {
+                    Warn($"styles line {line}: duplicated id '{id}' (the last one is used).");
+                }
+                result[id] = new CategoryStyle(id, row["bg"].Trim(), row["fg"].Trim(), row["border"].Trim());
+            }
+            return result.Values.ToList();
+        }
+
         // 헤더 이름으로 열을 찾는다(대소문자 무시). 필요한 열이 없으면 예외.
         private static List<Dictionary<string, string>> ReadRows(string csv, params string[] columns)
         {
