@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
-using System.IO;
 using System.Linq;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -11,7 +10,6 @@ using Caliburn.Micro;
 using DjmaxRandomSelectorV.Messages;
 using DjmaxRandomSelectorV.Models;
 using Dmrsv.RandomSelector;
-using Microsoft.Win32;
 
 namespace DjmaxRandomSelectorV.ViewModels
 {
@@ -133,14 +131,18 @@ namespace DjmaxRandomSelectorV.ViewModels
             PlaylistItems.Add(new PlaylistItem
             {
                 PatternId = pattern.PatternId,
-                Title = _namesake.Contains(pattern.Info.Title)
-                        ? $"{pattern.Info.Title} ({pattern.Info.Composer})"
-                        : pattern.Info.Title,
+                Title = GetDisplayTitle(pattern.Info),
                 Composer = pattern.Info.Composer,
                 Category = pattern.Info.Category,
                 Style = pattern.Style,
                 Level = pattern.Level.ToString()
             });
+        }
+
+        // 제목이 같은 곡이 여러 개면 작곡가를 붙여 구분한다.
+        private string GetDisplayTitle(MusicInfo info)
+        {
+            return _namesake.Contains(info.Title) ? $"{info.Title} ({info.Composer})" : info.Title;
         }
 
         private void AddToFilterAndPlaylist(int[] items)
@@ -152,34 +154,18 @@ namespace DjmaxRandomSelectorV.ViewModels
 
             foreach (int item in items)
             {
-                Track track;
-                try
-                {
-                    track = _db.AllTrack[item / 100];
-                }
-                catch (IndexOutOfRangeException)
+                // 다른 버전에서 만든 플레이리스트에는 현재 DB에 없는 곡이 있을 수 있다.
+                int trackId = item / 100;
+                if (trackId < 0 || trackId >= _db.AllTrack.Count)
                 {
                     continue;
                 }
 
-                var pattern = track.Patterns.FirstOrDefault(p => p.PatternId == item);
-                if (pattern is null)
+                var pattern = _db.AllTrack[trackId].Patterns.FirstOrDefault(p => p.PatternId == item);
+                if (pattern is not null)
                 {
-                    continue;
+                    AddItem(pattern);
                 }
-
-                _filter.PatternList.Add(pattern);
-                PlaylistItems.Add(new PlaylistItem
-                {
-                    PatternId = item,
-                    Title = _namesake.Contains(track.Title)
-                            ? $"{track.Title} ({track.Composer})"
-                            : track.Title,
-                    Composer = track.Composer,
-                    Category = track.Category,
-                    Style = pattern.Style,
-                    Level = pattern.Level.ToString()
-                });
             }
         }
 
@@ -309,22 +295,9 @@ namespace DjmaxRandomSelectorV.ViewModels
         #region TOOL methods
         public void SaveItems()
         {
-            string app = AppDomain.CurrentDomain.BaseDirectory;
-            string path = Path.Combine(app, PresetPath);
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path);
-            var dialog = new SaveFileDialog()
+            string fileName = JsonFileDialog.Save(PresetPath);
+            if (fileName is not null)
             {
-                InitialDirectory = path,
-                DefaultExt = ".json",
-                Filter = "JSON Files (*.json)|*.json"
-            };
-
-            bool? result = dialog.ShowDialog();
-
-            if (result == true)
-            {
-                string fileName = dialog.FileName;
                 var playlist = new Playlist()
                 {
                     Items = _filter.PatternList.Select(p => p.PatternId).ToArray()
@@ -335,25 +308,13 @@ namespace DjmaxRandomSelectorV.ViewModels
 
         public void LoadItems()
         {
-            string app = AppDomain.CurrentDomain.BaseDirectory;
-            string path = Path.Combine(app, PresetPath);
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path);
-            var dialog = new OpenFileDialog()
-            {
-                InitialDirectory = path,
-                DefaultExt = ".json",
-                Filter = "JSON Files (*.json)|*.json"
-            };
-
-            bool? result = dialog.ShowDialog();
-
-            if (result == true)
+            string fileName = JsonFileDialog.Open(PresetPath);
+            if (fileName is not null)
             {
                 Playlist playlist;
                 try
                 {
-                    playlist = ImportPlaylist(dialog.FileName);
+                    playlist = ImportPlaylist(fileName);
                 }
                 catch (Exception ex)
                 {
@@ -370,25 +331,13 @@ namespace DjmaxRandomSelectorV.ViewModels
 
         public void ConcatenateItems()
         {
-            string app = AppDomain.CurrentDomain.BaseDirectory;
-            string path = Path.Combine(app, PresetPath);
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path);
-            var dialog = new OpenFileDialog()
-            {
-                InitialDirectory = path,
-                DefaultExt = ".json",
-                Filter = "JSON Files (*.json)|*.json"
-            };
-
-            bool? result = dialog.ShowDialog();
-
-            if (result == true)
+            string fileName = JsonFileDialog.Open(PresetPath);
+            if (fileName is not null)
             {
                 Playlist playlist;
                 try
                 {
-                    playlist = ImportPlaylist(dialog.FileName);
+                    playlist = ImportPlaylist(fileName);
                 }
                 catch (Exception ex)
                 {
@@ -425,12 +374,10 @@ namespace DjmaxRandomSelectorV.ViewModels
                 return;
             }
 
-            var titles = from track in _db.AllTrack
-                         let title = track.Title
-                         select _namesake.Contains(title) ? $"{title} ({track.Composer})" : title;
+            var titles = _db.AllTrack.Select(track => GetDisplayTitle(track.Info));
             if (SearchBox.Equals("#"))
             {
-                titles = titles.Where(title => !Regex.IsMatch(title[..1], "[a-z]", RegexOptions.IgnoreCase));
+                titles = titles.Where(title => !TitleComparer.StartsWithAlphabet(title));
             }
             else
             {

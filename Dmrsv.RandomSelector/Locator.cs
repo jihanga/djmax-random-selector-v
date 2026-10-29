@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Runtime.InteropServices;
-using System.Text.RegularExpressions;
 using Dmrsv.RandomSelector.Enums;
 
 namespace Dmrsv.RandomSelector
@@ -42,8 +41,7 @@ namespace Dmrsv.RandomSelector
         {
             var getGroup = (Track t) =>
             {
-                char initial = char.ToLower(t.Title[0]);
-                return Regex.IsMatch(initial.ToString(), "[a-z]", RegexOptions.IgnoreCase) ? initial : '#';
+                return TitleComparer.StartsWithAlphabet(t.Title) ? char.ToLower(t.Title[0]) : '#';
             };
             var groupByInitial = trackList.Where(t => t.IsPlayable)
                                           .OrderBy(t => t.Title, new TitleComparer())
@@ -134,13 +132,13 @@ namespace Dmrsv.RandomSelector
 
         private void KeyDown(ushort key, bool isArrowKey = false)
         {
-            SendKeyDown(key, isArrowKey);
+            SendKey(key, isArrowKey, false);
             Thread.Sleep(InputInterval);
         }
 
         private void KeyUp(ushort key, bool isArrowKey = false)
         {
-            SendKeyUp(key, isArrowKey);
+            SendKey(key, isArrowKey, true);
             Thread.Sleep(InputInterval);
         }
 
@@ -183,90 +181,37 @@ namespace Dmrsv.RandomSelector
             KeyUp(ctrl);
         }
 
-        private bool SendKeyDown(ushort ScanCode, bool isArrowKey = false)
+        private void SendKey(ushort scanCode, bool isArrowKey, bool isKeyUp)
         {
             // Original code from https://github.com/learncodebygaming/pydirectinput
             // Copyright(c) 2020 Ben Johnson
-            uint insertedEvents = 0;
-            uint expectedEvents = 1;
-            uint Flags = 0x0008;    // KEYEVENTF_SCANCODE
-            INPUT input = new INPUT { Type = 1 };
-            input.Data.Keyboard = new KEYBDINPUT
-            {
-                Vk = 0,
-                Time = 0,
-                ExtraInfo = IntPtr.Zero
-            };
+            const uint FlagExtendedKey = 0x0001;    // KEYEVENTF_EXTENDEDKEY
+            const uint FlagKeyUp = 0x0002;          // KEYEVENTF_KEYUP
+            const uint FlagScanCode = 0x0008;       // KEYEVENTF_SCANCODE
+            uint flags = FlagScanCode | (isKeyUp ? FlagKeyUp : 0);
 
-            if (isArrowKey)
-            {
-                Flags |= 0x0001;    // KEYEVENTF_EXTENDEDKEY
-                if (GetKeyState(0x90) != 0)
-                {
-                    INPUT input2 = new INPUT { Type = 1 };
-                    input2.Data.Keyboard = new KEYBDINPUT
-                    {
-                        Vk = 0,
-                        Scan = 0xE0,
-                        Flags = 0x0008,
-                        Time = 0,
-                        ExtraInfo = IntPtr.Zero
-                    };
-                    INPUT[] inputs2 = new INPUT[] { input2 };
-                    expectedEvents = 2;
-                    insertedEvents += SendInput(1, inputs2, Marshal.SizeOf(typeof(INPUT)));
-                }
-            }
-            input.Data.Keyboard.Scan = ScanCode;
-            input.Data.Keyboard.Flags = Flags;
-
-            INPUT[] inputs = new INPUT[] { input };
-            insertedEvents += SendInput(1, inputs, Marshal.SizeOf(typeof(INPUT)));
-            return insertedEvents == expectedEvents;
-        }
-
-        private bool SendKeyUp(ushort ScanCode, bool isArrowKey = false)
-        {
-            // Original code from https://github.com/learncodebygaming/pydirectinput
-            // Copyright(c) 2020 Ben Johnson
-            uint insertedEvents = 0;
-            uint expectedEvents = 1;
-            uint Flags = 0x0008 | 0x0002;       // KEYEVENTF_SCANCODE | KEYEVENTF_KEYUP
-            INPUT input = new INPUT { Type = 1 };
-            input.Data.Keyboard = new KEYBDINPUT
-            {
-                Vk = 0,
-                Time = 0,
-                ExtraInfo = IntPtr.Zero
-            };
-
-            if (isArrowKey)
-            {
-                Flags |= 0x0001;    // KEYEVENTF_EXTENDEDKEY
-            }
-
-            input.Data.Keyboard.Scan = ScanCode;
-            input.Data.Keyboard.Flags = Flags;
-
-            INPUT[] inputs = new INPUT[] { input };
-            insertedEvents += SendInput(1, inputs, Marshal.SizeOf(typeof(INPUT)));
-
+            INPUT key = MakeInput(scanCode, flags | (isArrowKey ? FlagExtendedKey : 0));
+            // NumLock이 켜져 있으면 방향키를 누르기 전과 뗀 후에 0xE0 스캔코드를 함께 보낸다.
             if (isArrowKey && GetKeyState(0x90) != 0)
             {
-                INPUT input2 = new INPUT { Type = 1 };
-                input2.Data.Keyboard = new KEYBDINPUT
-                {
-                    Vk = 0,
-                    Scan = 0xE0,
-                    Flags = 0x0008 | 0x0002,
-                    Time = 0,
-                    ExtraInfo = IntPtr.Zero
-                };
-                INPUT[] inputs2 = new INPUT[] { input2 };
-                expectedEvents = 2;
-                insertedEvents += SendInput(1, inputs2, Marshal.SizeOf(typeof(INPUT)));
+                INPUT prefix = MakeInput(0xE0, flags);
+                SendOne(isKeyUp ? key : prefix);
+                SendOne(isKeyUp ? prefix : key);
+                return;
             }
-            return insertedEvents == expectedEvents;
+            SendOne(key);
+        }
+
+        private static INPUT MakeInput(ushort scanCode, uint flags)
+        {
+            INPUT input = new INPUT { Type = 1 };
+            input.Data.Keyboard = new KEYBDINPUT { Scan = scanCode, Flags = flags };
+            return input;
+        }
+
+        private static void SendOne(INPUT input)
+        {
+            SendInput(1, new INPUT[] { input }, Marshal.SizeOf(typeof(INPUT)));
         }
 
         [DllImport("user32.dll")]

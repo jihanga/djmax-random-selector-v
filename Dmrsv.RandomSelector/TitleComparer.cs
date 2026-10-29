@@ -1,9 +1,16 @@
 ﻿using System.Globalization;
+using System.Text.RegularExpressions;
 
 namespace Dmrsv.RandomSelector
 {
     public class TitleComparer : IComparer<string>
     {
+        // 게임은 알파벳으로 시작하지 않는 제목을 '#' 그룹으로 묶는다.
+        public static bool StartsWithAlphabet(string title)
+        {
+            return Regex.IsMatch(title[..1], "[a-z]", RegexOptions.IgnoreCase);
+        }
+
         public int Compare(string? x, string? y)
         {
             if (string.Equals(x, y))

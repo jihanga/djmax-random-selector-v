@@ -3,6 +3,7 @@ using System.IO;
 using System.Net.Http;
 using System.Text.Json;
 using System.Threading.Tasks;
+using Microsoft.Win32;
 
 namespace DjmaxRandomSelectorV
 {
@@ -44,6 +45,24 @@ namespace DjmaxRandomSelectorV
         {
             using var writer = new StreamWriter(path);
             writer.Write(content);
+        }
+    }
+
+    // 프로그램 폴더 아래의 지정한 폴더에서 JSON 파일 대화상자를 연다. 취소하면 null을 반환한다.
+    public static class JsonFileDialog
+    {
+        public static string Save(string folder) => Show(new SaveFileDialog(), folder);
+
+        public static string Open(string folder) => Show(new OpenFileDialog(), folder);
+
+        private static string Show(FileDialog dialog, string folder)
+        {
+            string path = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, folder);
+            Directory.CreateDirectory(path);
+            dialog.InitialDirectory = path;
+            dialog.DefaultExt = ".json";
+            dialog.Filter = "JSON Files (*.json)|*.json";
+            return dialog.ShowDialog() == true ? dialog.FileName : null;
         }
     }
 }

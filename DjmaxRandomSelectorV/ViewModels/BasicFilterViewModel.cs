@@ -2,10 +2,8 @@
 using DjmaxRandomSelectorV.Messages;
 using DjmaxRandomSelectorV.Models;
 using Dmrsv.RandomSelector;
-using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
-using System.IO;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -206,44 +204,20 @@ namespace DjmaxRandomSelectorV.ViewModels
 
         public void SavePreset()
         {
-            string app = AppDomain.CurrentDomain.BaseDirectory;
-            string path = Path.Combine(app, PresetPath);
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path);
-            var dialog = new SaveFileDialog()
+            string fileName = JsonFileDialog.Save(PresetPath);
+            if (fileName is not null)
             {
-                InitialDirectory = path,
-                DefaultExt = ".json",
-                Filter = "JSON Files (*.json)|*.json"
-            };
-
-            bool? result = dialog.ShowDialog();
-
-            if (result == true)
-            {
-                _fileManager.Export(_filter, dialog.FileName);
+                _fileManager.Export(_filter, fileName);
             }
         }
         public void LoadPreset()
         {
-            string app = AppDomain.CurrentDomain.BaseDirectory;
-            string path = Path.Combine(app, PresetPath);
-            if (!Directory.Exists(path))
-                Directory.CreateDirectory(path);
-            var dialog = new OpenFileDialog()
-            {
-                InitialDirectory = path,
-                DefaultExt = ".json",
-                Filter = "JSON Files (*.json)|*.json"
-            };
-
-            bool? result = dialog.ShowDialog();
-
-            if (result == true)
+            string fileName = JsonFileDialog.Open(PresetPath);
+            if (fileName is not null)
             {
                 try
                 {
-                    ImportFilter(dialog.FileName);
+                    ImportFilter(fileName);
                 }
                 catch (Exception ex)
                 {

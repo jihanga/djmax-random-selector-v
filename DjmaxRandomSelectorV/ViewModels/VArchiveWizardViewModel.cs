@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Net.Http;
@@ -54,8 +55,16 @@ namespace DjmaxRandomSelectorV.ViewModels
             PatternItems = new BindableCollection<VArchivePatternItem>();
         }
 
-        public void RequestBoard()
+        // 요청 중에 다시 누르면 무시한다. 버튼의 IsEnabled는 XAML 트리거가 관리하므로 Can 가드를 쓰지 않는다.
+        private bool _isRequesting;
+
+        public async Task RequestBoard()
         {
+            if (_isRequesting)
+            {
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(Nickname))
             {
                 MessageBox.Show("Nickname is empty.", "Invalid Request", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -81,16 +90,20 @@ namespace DjmaxRandomSelectorV.ViewModels
                 return;
             }
 
+            // 응답을 기다리는 동안 입력값이 바뀔 수 있으므로 요청 시점의 값을 고정한다.
+            string nickname = Nickname;
+            string selectedBoard = SelectedBoard;
+            _isRequesting = true;
             try
             {
                 using var client = new HttpClient();
                 client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
-                var floorNameByFloor = LoadFloorNameByFloor(client);
+                var floorNameByFloor = await LoadFloorNameByFloor(client);
 
-                string url = $"https://v-archive.net/api/v2/archive/{Nickname}/button/{SelectedButton}";
-                HttpResponseMessage response = client.GetAsync(url).Result;
+                string url = $"https://v-archive.net/api/v2/archive/{Uri.EscapeDataString(nickname)}/button/{selectedButtonNum}";
+                HttpResponseMessage response = await client.GetAsync(url);
 
-                ArchiveV2Response root = response.Content.ReadFromJsonAsync<ArchiveV2Response>().Result;
+                ArchiveV2Response root = await response.Content.ReadFromJsonAsync<ArchiveV2Response>();
                 if (root is null)
                 {
                     MessageBox.Show("Invalid response from server.", "Request Failed", MessageBoxButton.OK, MessageBoxImage.Error);
@@ -105,7 +118,7 @@ namespace DjmaxRandomSelectorV.ViewModels
 
                 PatternItems.Clear();
                 CurrentButton = selectedButtonNum + "B";
-                CurrentBoard = string.IsNullOrWhiteSpace(SelectedBoard) ? "All" : SelectedBoard;
+                CurrentBoard = string.IsNullOrWhiteSpace(selectedBoard) ? "All" : selectedBoard;
 
                 var records = root.Records ?? new List<ArchiveV2Record>();
                 var recordDict = records
@@ -124,7 +137,7 @@ namespace DjmaxRandomSelectorV.ViewModels
                                   let effectiveFloor = record?.Floor ?? dbFloor
                                   let hasFloor = effectiveFloor.HasValue
                                   let floorKey = hasFloor ? (int?)effectiveFloor.Value : null
-                                  let boardValue = SelectedBoard ?? string.Empty
+                                  let boardValue = selectedBoard ?? string.Empty
                                   where IsPatternMatchedByBoard(boardValue, patternStr, fallbackLevel, floorKey)
                                   select new VArchivePatternItem()
                                   {
@@ -151,17 +164,21 @@ namespace DjmaxRandomSelectorV.ViewModels
                     .ThenBy(p => p.Title)
                     .ThenBy(p => p.Style));
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 MessageBox.Show($"Request failed: {ex.Message}", "Request Failed", MessageBoxButton.OK, MessageBoxImage.Error);
             }
+            finally
+            {
+                _isRequesting = false;
+            }
         }
 
-        private static Dictionary<int, string> LoadFloorNameByFloor(HttpClient client)
+        private static async Task<Dictionary<int, string>> LoadFloorNameByFloor(HttpClient client)
         {
             try
             {
-                var floors = client.GetFromJsonAsync<List<FloorInfo>>(FloorDbUrl).Result;
+                var floors = await client.GetFromJsonAsync<List<FloorInfo>>(FloorDbUrl);
                 if (floors is null)
                 {
                     return new Dictionary<int, string>();

@@ -103,7 +103,7 @@ namespace DjmaxRandomSelectorV.ViewModels
                 IsPlayable = track.IsPlayable, // TODO: apply the track is playable (required to respond to change setting)
                 Status = favorite.Contains(track.Id) ? 1 : (blacklist.Contains(track.Id) ? -1 : 0)
             }).OrderBy(item => item.Title, new TitleComparer())
-              .ThenByDescending(t => t.Id == 170 || t.Id == 267 ? t.Id : 0)
+              .ThenByDescending(t => SortRules.Current.GetTiebreak(t.Id))
               .ToList();
             _searchedItems = new List<FavoriteItem>();
             _filtersAllTrack = true;
@@ -146,7 +146,7 @@ namespace DjmaxRandomSelectorV.ViewModels
             if (!string.IsNullOrEmpty(SearchBox))
             {
                 searched = SearchBox.Equals("#")
-                           ? searched.Where(item => !Regex.IsMatch(item.Title[..1], "[a-z]", RegexOptions.IgnoreCase))
+                           ? searched.Where(item => !TitleComparer.StartsWithAlphabet(item.Title))
                            : searched.Where(item => item.Title.StartsWith(SearchBox, StringComparison.OrdinalIgnoreCase));
             }
             _searchedItems = searched.ToList();
